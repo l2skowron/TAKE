@@ -1,8 +1,11 @@
 package com.example.main;
 
+import java.util.Set;
+
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import lombok.Getter;
 import lombok.Setter;
 @Entity
@@ -12,4 +15,7 @@ public class Student extends Osoba {
 	private Integer nrAlbumu;
 	private Integer semestr;
 	private String kierunek;
+	
+	@OneToMany(cascade = {CascadeType.ALL}, mappedBy = "student")
+ 	private Set<Ocena> oceny;
 }
