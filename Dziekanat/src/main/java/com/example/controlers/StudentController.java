@@ -1,6 +1,5 @@
 package com.example.controlers;
 
-import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -14,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.example.Repositories.StudentRepository;
+import com.example.dto.StudentDTO;
 import com.example.main.Student;
 
 @Controller
@@ -29,8 +29,14 @@ public class StudentController {
 	}
 		
 	@GetMapping("/{id}")
-	public @ResponseBody Optional<Student> getById(@PathVariable Integer id){
-		return studentRepo.findById(id);
+	public @ResponseBody StudentDTO getById(@PathVariable Integer id){
+		Student student = studentRepo.findById(id).orElse(null);
+		if(student ==null)
+		{
+			return null;
+		}
+		
+		return new StudentDTO(student);
 	}
 	@GetMapping
 	public @ResponseBody Iterable<Student> getAll(){

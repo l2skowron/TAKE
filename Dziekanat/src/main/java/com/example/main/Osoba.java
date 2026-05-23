@@ -1,13 +1,12 @@
 package com.example.main;
 
-import com.example.enums.Rola;
+
 
 
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
-
 import lombok.Getter;
 import lombok.Setter;
 
@@ -22,5 +21,4 @@ public abstract class Osoba {
 	private String imie;
 	private String nazwisko;
 	private String email;
-	private	Rola rola;
 }

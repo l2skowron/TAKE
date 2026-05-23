@@ -9,8 +9,5 @@ import com.example.main.Student;
 
 
 public interface StudentRepository extends CrudRepository<Student, Integer> {
-	
 		List<Student> findByNazwisko(String nazwisko);
-
-
 }
