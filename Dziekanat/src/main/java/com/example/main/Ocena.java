@@ -34,6 +34,5 @@ public class Ocena {
 	
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name="przedmiot_id")
-	private Przedmiot
-	przedmiot;
+	private Przedmiot przedmiot;
 }

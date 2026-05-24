@@ -38,5 +38,6 @@ public class StudentDTO extends RepresentationModel<StudentDTO> {
 		
 		
 		this.add(linkTo(methodOn(StudentController.class).getById(student.getId())).withRel("student"));
+		
 	}
 }
