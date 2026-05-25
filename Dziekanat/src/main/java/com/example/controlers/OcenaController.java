@@ -47,4 +47,19 @@ public @ResponseBody String delete(@PathVariable Integer id) {
 	ocenaRepo.deleteById(id);
 	return "Usunieto ocene o id= "+ id;
 }
+@Mapping
+public @ResponseBody CollectionModel<OcentaDTO> getOcenyForStudents(@PathVariable Integer id){
+	Student student = studentRepository.findById(id).orElse(null);
+	if(student == null) return null;
+	
+	List<OcenaDTO> ocenyDTO =new ArrayList<>();
+	for(Ocena ocena : student.getOceny()) {
+		ocenyDTO.add(new OcenaDTO(ocena));
+	}
+	CollectionModel<OcenaDTO> collectionModel = CollectionModel.of(OcenyDTO);
+	
+	collectionModel.add(linkTo(methodOn(StudentController.class).getOcenyForStudent(id)).withSelfRel());
+	
+	return collectionModel;
+}
 }
