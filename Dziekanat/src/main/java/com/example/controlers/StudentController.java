@@ -1,8 +1,13 @@
 package com.example.controlers;
 
 
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
+
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
@@ -16,16 +21,30 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
+
 import com.example.Repositories.StudentRepository;
+import com.example.dto.OcenaDTO;
+import com.example.dto.SredniaDTO;
 import com.example.dto.StudentDTO;
+import com.example.main.Ocena;
+import com.example.main.Przedmiot;
 import com.example.main.Student;
 
 @Controller
 @RequestMapping("/student")
 public class StudentController {
 
+	
+	
+	private double sredniaDoOcena(double srednia) {
+		if(srednia<2.75)return 2.0;
+		if(srednia<3.25)return 3.0;
+		if(srednia<3.75)return 3.5;
+		if(srednia<4.25)return 4.0;
+		if(srednia<4.75)return 4.5;
+		return 5.0;
+	}
+	
 	@Autowired
 	StudentRepository studentRepo;
 	@PostMapping
@@ -94,4 +113,99 @@ public class StudentController {
 	
 	return collectionModel;
 }
+	@GetMapping("/{id}/oceny")
+	public @ResponseBody CollectionModel<OcenaDTO> getOcenyForStudent(@PathVariable Integer id){
+		Student student = studentRepo.findById(id).orElse(null);
+		if(student == null) return null;
+		
+		List<OcenaDTO> ocenyDTO =new ArrayList<>();
+		for(Ocena ocena : student.getOceny()) {
+			ocenyDTO.add(new OcenaDTO(ocena));
+		}
+		CollectionModel<OcenaDTO> collectionModel = CollectionModel.of(ocenyDTO);
+		
+		collectionModel.add(linkTo(methodOn(StudentController.class).getOcenyForStudent(id)).withSelfRel());
+		
+		return collectionModel;
 	}
+	
+	@GetMapping("/{id}/srednia")
+	public @ResponseBody SredniaDTO getSredniaForPrzedmiot(@PathVariable Integer id,
+			@PathVariable Integer przedmiotId){
+		Student student = studentRepo.findById(id).orElse(null);
+		if(student == null || student.getOceny() == null || student.getOceny().isEmpty()) {
+			return new SredniaDTO(id,0.0);
+		}
+		double sumaIloczynow = 0;
+		double sumaWag = 0;
+		for(Ocena ocena : student.getOceny()) {
+			if(ocena.getPrzedmiot()!= null && ocena.getPrzedmiot().getId().equals(przedmiotId)) {
+			double wartoscOceny = ocena.getWartosc();
+			double wagaOceny = ocena.getTypZaliczenia().getPoziom();
+			sumaIloczynow += (wartoscOceny*wagaOceny);
+			sumaWag += wagaOceny;
+			}
+		}
+	double srednia = 0.0;
+	if(sumaWag>0) {
+		srednia = sumaIloczynow/sumaWag;
+		srednia = Math.round(srednia*100.0)/100.0;
+	}
+	SredniaDTO dto = new SredniaDTO(id,srednia);
+	dto.add(linkTo(methodOn(StudentController.class).getSredniaForPrzedmiot(id, przedmiotId)).withSelfRel());
+	dto.add(linkTo(methodOn(StudentController.class).getById(id)).withRel("student"));
+		
+	return dto;
+}
+	
+	@GetMapping("/{id}/srednia-ogolna")
+	public @ResponseBody SredniaDTO getSredniaOgolnaECTS(@PathVariable Integer id) {
+	Student student = studentRepo.findById(id).orElse(null);
+	if(student == null || student.getOceny() == null || student.getOceny().isEmpty()) {
+		return new SredniaDTO(id,0.0);
+	}
+	Map<Przedmiot,List<Ocena>> ocenyDlaPrzedmiotu = new HashMap<>();
+	for(Ocena ocena : student.getOceny()) {
+		Przedmiot p = ocena.getPrzedmiot();
+		if(p != null) {
+			ocenyDlaPrzedmiotu.computeIfAbsent(p,k -> new ArrayList<>()).add(ocena);
+		}
+	}
+	double sumaIloczynow = 0.0;
+	double sumaECTS = 0.0;
+	
+	for (Map.Entry<Przedmiot, List<Ocena>> entry : ocenyDlaPrzedmiotu.entrySet()) {
+		Przedmiot przedmiot = entry.getKey();
+		List<Ocena> listaOcenPrzedmiotu = entry.getValue();
+		
+		double sumaIloczynowPrzedmiotu = 0.0;
+		double sumaWagOcenPrzedmiotu = 0.0;
+		for(Ocena o : listaOcenPrzedmiotu) {
+			sumaIloczynowPrzedmiotu +=(o.getWartosc()*o.getTypZaliczenia().getPoziom());
+			sumaWagOcenPrzedmiotu +=o.getTypZaliczenia().getPoziom();
+		}
+		
+		if(sumaWagOcenPrzedmiotu>0) {
+			double sredniaKoncowa = sumaIloczynowPrzedmiotu/sumaWagOcenPrzedmiotu;
+			double ocenaKoncowa = sredniaDoOcena(sredniaKoncowa);
+			
+			double punktyECTS = przedmiot.getECTS();
+			sumaIloczynow += (ocenaKoncowa*punktyECTS);
+			sumaECTS += punktyECTS;
+		}
+	}
+	double sredniaOgolna = 0.0;
+	if(sumaECTS>0) {
+		sredniaOgolna = sumaIloczynow/sumaECTS;
+		sredniaOgolna = Math.round(sredniaOgolna*100.0)/100.0;
+	}
+	
+	SredniaDTO dto = new SredniaDTO(id,sredniaOgolna);
+	dto.add(linkTo(methodOn(StudentController.class).getSredniaOgolnaECTS(id)).withSelfRel());
+	dto.add(linkTo(methodOn(StudentController.class).getById(id)).withRel("student"));
+	return dto;
+	}
+}
+	
+	
+		
