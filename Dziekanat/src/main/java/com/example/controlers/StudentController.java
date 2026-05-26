@@ -6,8 +6,10 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
@@ -24,6 +26,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.example.Repositories.StudentRepository;
 import com.example.dto.OcenaDTO;
+import com.example.dto.PrzedmiotDTO;
 import com.example.dto.SredniaDTO;
 import com.example.dto.StudentDTO;
 import com.example.main.Ocena;
@@ -159,7 +162,8 @@ public class StudentController {
 }
 	
 	@GetMapping("/{id}/srednia-ogolna")
-	public @ResponseBody SredniaDTO getSredniaOgolnaECTS(@PathVariable Integer id) {
+	public @ResponseBody SredniaDTO getSredniaOgolnaECTS(@PathVariable Integer id,
+			@RequestParam(required = false) Integer semestr) {
 	Student student = studentRepo.findById(id).orElse(null);
 	if(student == null || student.getOceny() == null || student.getOceny().isEmpty()) {
 		return new SredniaDTO(id,0.0);
@@ -167,7 +171,11 @@ public class StudentController {
 	Map<Przedmiot,List<Ocena>> ocenyDlaPrzedmiotu = new HashMap<>();
 	for(Ocena ocena : student.getOceny()) {
 		Przedmiot p = ocena.getPrzedmiot();
-		if(p != null) {
+		if(p != null ) {
+			
+			if(semestr != null &&  !semestr.equals(p.getNumerSemestru())) {
+				continue;
+			}
 			ocenyDlaPrzedmiotu.computeIfAbsent(p,k -> new ArrayList<>()).add(ocena);
 		}
 	}
@@ -201,11 +209,36 @@ public class StudentController {
 	}
 	
 	SredniaDTO dto = new SredniaDTO(id,sredniaOgolna);
-	dto.add(linkTo(methodOn(StudentController.class).getSredniaOgolnaECTS(id)).withSelfRel());
+	dto.add(linkTo(methodOn(StudentController.class).getSredniaOgolnaECTS(id,semestr)).withSelfRel());
 	dto.add(linkTo(methodOn(StudentController.class).getById(id)).withRel("student"));
 	return dto;
 	}
-}
+
+
+@GetMapping("/{id}/przedmioty-studenta")
+public @ResponseBody CollectionModel<PrzedmiotDTO> getPrzedmiotStudent(@PathVariable Integer id) {
+	Student student = studentRepo.findById(id).orElse(null);
+	if(student == null || student.getOceny() == null) return null;
 	
+	Set<Przedmiot> przedmioty =new HashSet<>();
+	for(Ocena ocena : student.getOceny()) {
+		if(ocena.getPrzedmiot()!= null) {
+		przedmioty.add(ocena.getPrzedmiot());
+		}
+		}
+	
+	List<PrzedmiotDTO> przedmiotyDTO = new ArrayList<>();
+	for(Przedmiot przedmiot : przedmioty) {
+		przedmiotyDTO.add(new PrzedmiotDTO(przedmiot));
+	}
+	CollectionModel<PrzedmiotDTO> collectionModel = CollectionModel.of(przedmiotyDTO);
+	
+	collectionModel.add(linkTo(methodOn(StudentController.class)
+			.getPrzedmiotStudent(id)).withSelfRel());
+	
+	return collectionModel;
+}
+}
+
 	
 		

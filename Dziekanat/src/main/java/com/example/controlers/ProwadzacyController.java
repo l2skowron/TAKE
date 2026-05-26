@@ -1,8 +1,14 @@
 package com.example.controlers;
 
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.CollectionModel;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,7 +20,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.example.Repositories.ProwadzacyRepo;
+import com.example.Repositories.PrzedmiotRepository;
+import com.example.dto.OcenaDTO;
+import com.example.main.Ocena;
 import com.example.main.Prowadzacy;
+import com.example.main.Przedmiot;
 
 @Controller
 @RequestMapping("/prowadzacy")
@@ -51,5 +61,29 @@ public @ResponseBody String delete(@PathVariable Integer id) {
 	return "Usunieto prowadzącego o id " + id;
 }
 
+@Autowired
+private PrzedmiotRepository przedmiotRepo;
+@GetMapping("/{id}/oceny")
+public @ResponseBody CollectionModel<OcenaDTO> getOcenyForProwadzacy(@PathVariable Integer id){
+	Prowadzacy prowadzacy = prowadzacyRepo.findById(id).orElse(null);
+	if(prowadzacy == null) return null;
+	
+	List<OcenaDTO> ocenyDTO =new ArrayList<>();
+	
+	List<Przedmiot> przedmiotyProwadzacego = przedmiotRepo.findByProwadzacyId(id);
+	for (Przedmiot przedmiot  : przedmiotyProwadzacego) {
+		if(przedmiot.getOcena() !=null) {
+			for(Ocena ocena : przedmiot.getOcena()) {
+				ocenyDTO.add(new OcenaDTO(ocena));
+			}
+		}
+	}
+	CollectionModel<OcenaDTO> collectionModel = CollectionModel.of(ocenyDTO);
+	
+	collectionModel.add(linkTo(methodOn(ProwadzacyController.class)
+			.getOcenyForProwadzacy(id)).withSelfRel());
+	
+	return collectionModel;
+}
 
 }
