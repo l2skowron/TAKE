@@ -1,6 +1,6 @@
 package com.example.main;
 
-import java.security.Timestamp;
+import java.time.LocalDate;
 
 import org.springframework.stereotype.Component;
 
@@ -21,7 +21,7 @@ public class Ocena {
 	@Id
 	private Integer id;
 	private Integer wartosc;
-	private Timestamp data;
+	private LocalDate data;
 	private TypZaliczenia typZaliczenia;
 
 	@ManyToOne(fetch = FetchType.LAZY)

@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.example.Repositories.StudentRepository;
+import com.example.dto.LiczbaDTO;
 import com.example.dto.OcenaDTO;
 import com.example.dto.PrzedmiotDTO;
 import com.example.dto.SredniaDTO;
@@ -238,6 +239,32 @@ public @ResponseBody CollectionModel<PrzedmiotDTO> getPrzedmiotStudent(@PathVari
 	
 	return collectionModel;
 }
+@GetMapping("/brakOcen")
+public @ResponseBody CollectionModel<StudentDTO> getStudentWithoutOceny(){
+List<Student> skresleniStudenci  = studentRepo.findStudentsWithoutOceny();
+
+List<StudentDTO> dtos = new ArrayList<>();
+
+for(Student s : skresleniStudenci) {
+	dtos.add(new StudentDTO(s));
+}
+CollectionModel<StudentDTO> collectionModel = CollectionModel.of(dtos);
+
+collectionModel.add(linkTo(methodOn(StudentController.class).getStudentWithoutOceny()).withSelfRel());
+return collectionModel;
+}
+
+@GetMapping("/liczbaStudentowNaKirunku")
+public @ResponseBody LiczbaDTO countByKierunek(
+		@RequestParam String kierunek) {
+	
+	long liczbaStudentow = studentRepo.countByKierunek(kierunek);
+	
+	LiczbaDTO dto = new LiczbaDTO(liczbaStudentow,"Liczba studentow na kierunku");
+	dto.add(linkTo(methodOn(StudentRepository.class).countByKierunek(kierunek)).withSelfRel());
+	return dto;
+}
+
 }
 
 	

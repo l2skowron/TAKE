@@ -17,5 +17,7 @@ public interface StudentRepository extends CrudRepository<Student, Integer> {
 
 		List<Student> findSemestr(Integer semestr);
 
+		List<Student> findStudentsWithoutOceny();
 	
+		long countByKierunek(String kierunek);
 }
