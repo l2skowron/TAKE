@@ -13,8 +13,8 @@ import lombok.Setter;
 
 public class Prowadzacy extends Osoba{
 	private String katedra;
-	private String wydział;
-	private String tytułNaukowy;
+	private String wydzial;
+	private String tytulNaukowy;
 	@OneToMany(cascade = {CascadeType.ALL}, mappedBy= "prowadzacy")
 	Set<Ocena> ocena;
 }

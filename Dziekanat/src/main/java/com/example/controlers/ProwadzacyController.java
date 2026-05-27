@@ -17,11 +17,14 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.example.Repositories.ProwadzacyRepo;
 import com.example.Repositories.PrzedmiotRepository;
+import com.example.dto.LiczbaDTO;
 import com.example.dto.OcenaDTO;
+import com.example.dto.ProwadzacyDTO;
 import com.example.main.Ocena;
 import com.example.main.Prowadzacy;
 import com.example.main.Przedmiot;
@@ -85,5 +88,52 @@ public @ResponseBody CollectionModel<OcenaDTO> getOcenyForProwadzacy(@PathVariab
 	
 	return collectionModel;
 }
+
+
+@GetMapping("/liczba")
+public @ResponseBody LiczbaDTO getSumaProwadzacych() {
+	long iloscProwadzacych = prowadzacyRepo.count();
+	
+	LiczbaDTO dto = new LiczbaDTO(iloscProwadzacych, "Suma wszystkich prowadzacych" );
+	dto.add(linkTo(methodOn(ProwadzacyController.class).getSumaProwadzacych()).withSelfRel());
+
+return dto;
+}
+@GetMapping("/tytulNaukowy")
+public @ResponseBody CollectionModel<ProwadzacyDTO> getProwadzacyByTytulNaukowy(
+		@RequestParam String tytul){
+	
+	
+	List<Prowadzacy> prowadzacy = prowadzacyRepo.findByTytulNaukowy(tytul);
+	List<ProwadzacyDTO> dtos = new ArrayList<>();
+	for(Prowadzacy p : prowadzacy) {
+		dtos.add(new ProwadzacyDTO(p));	
+	}
+	
+CollectionModel<ProwadzacyDTO> collectionModel = CollectionModel.of(dtos);
+	
+	collectionModel.add(linkTo(methodOn(ProwadzacyController.class)
+			.getProwadzacyByTytulNaukowy(tytul)).withSelfRel());
+	
+	return collectionModel;
+	}
+@GetMapping("/katedra")
+public @ResponseBody CollectionModel<ProwadzacyDTO> getProwadzacyByKatedra(
+		@RequestParam String katedra){
+	
+	List<Prowadzacy> prowadzacy = prowadzacyRepo.findByKatedra(katedra);
+	List<ProwadzacyDTO> dtos = new ArrayList<>();
+	
+	for(Prowadzacy p : prowadzacy) {
+		dtos.add(new ProwadzacyDTO(p));
+	}
+	
+	CollectionModel<ProwadzacyDTO> collectionModel = CollectionModel.of(dtos);
+	
+	collectionModel.add(linkTo(methodOn(ProwadzacyController.class)
+			.getProwadzacyByKatedra(katedra)).withSelfRel());
+return collectionModel;
+}
+	
 
 }
