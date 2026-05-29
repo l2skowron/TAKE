@@ -74,7 +74,7 @@ public @ResponseBody CollectionModel<OcenaDTO> findByDataWystawieniaBetween(
             .findByDataWystawieniaBetween(dataPoczatkowa, dataKoncowa)).withSelfRel());
 	return collectionModel;
 }
-@GetMapping("/{id}/ocena")
+@GetMapping("/{id}/ocena-szczegoly")
 public @ResponseBody OcenaDTO getOcenaById(@PathVariable Integer id) {
 	
 	Ocena ocena = ocenaRepo.findById(id).orElse(null);
