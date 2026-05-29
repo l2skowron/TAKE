@@ -11,7 +11,7 @@ public class SredniaDTO extends RepresentationModel<SredniaDTO>{
 	private Integer studentId;
 	private Double srednia;
 	
-	public SredniaDTO(Integer studendId,Double Srednia) {
+	public SredniaDTO(Integer studentId,Double srednia) {
 		this.studentId = studentId;
 		this.srednia = srednia;
 	}

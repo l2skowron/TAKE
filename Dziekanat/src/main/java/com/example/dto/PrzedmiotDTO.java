@@ -2,7 +2,7 @@ package com.example.dto;
 
 import org.springframework.hateoas.RepresentationModel;
 
-import com.example.main.Przedmiot;
+import com.example.entities.Przedmiot;
 
 import lombok.Getter;
 import lombok.Setter;

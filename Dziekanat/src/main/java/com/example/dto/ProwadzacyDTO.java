@@ -5,8 +5,8 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 import org.springframework.hateoas.RepresentationModel;
 
-import com.example.controlers.ProwadzacyController;
-import com.example.main.Prowadzacy;
+import com.example.controllers.ProwadzacyController;
+import com.example.entities.Prowadzacy;
 public class ProwadzacyDTO extends RepresentationModel<ProwadzacyDTO> {
 	
 		private Integer Id;

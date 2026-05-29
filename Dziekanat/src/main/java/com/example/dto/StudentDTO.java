@@ -5,8 +5,8 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 import org.springframework.hateoas.RepresentationModel;
 
-import com.example.controlers.StudentController;
-import com.example.main.Student;
+import com.example.controllers.StudentController;
+import com.example.entities.Student;
 
 import lombok.Getter;
 import lombok.Setter;

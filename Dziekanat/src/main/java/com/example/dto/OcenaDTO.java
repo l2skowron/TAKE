@@ -4,11 +4,11 @@ import java.time.LocalDate;
 
 import org.springframework.hateoas.RepresentationModel;
 
+import com.example.entities.Ocena;
+import com.example.entities.Prowadzacy;
+import com.example.entities.Przedmiot;
+import com.example.entities.Student;
 import com.example.enums.TypZaliczenia;
-import com.example.main.Ocena;
-import com.example.main.Prowadzacy;
-import com.example.main.Przedmiot;
-import com.example.main.Student;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -20,9 +20,9 @@ public class OcenaDTO extends RepresentationModel<OcenaDTO>{
 	private Integer wartosc;
 	private LocalDate data;
 	private TypZaliczenia typZaliczenia;
-	private Student student;
-	private Prowadzacy prowadzacy;
-	private Przedmiot przedmiot;
+	private String student;
+	private String prowadzacy;
+	private String nazwaPrzedmiotu;
 	
 	public OcenaDTO() {};
 	
@@ -31,8 +31,14 @@ public class OcenaDTO extends RepresentationModel<OcenaDTO>{
 		this.wartosc = ocena.getWartosc();
 		this.data=ocena.getData();
 		this.typZaliczenia=ocena.getTypZaliczenia();
-		this.student=ocena.getStudent();
-		this.prowadzacy=ocena.getProwadzacy();
-		this.przedmiot=ocena.getPrzedmiot();
-	}
+		if (ocena.getStudent() != null) {
+            this.student = ocena.getStudent().getImie() + " " + ocena.getStudent().getNazwisko();
+        }
+		if(ocena.getProwadzacy()!= null) {
+		this.prowadzacy=ocena.getProwadzacy().getImie()+ " "+ ocena.getProwadzacy().getNazwisko();
+		}
+		if(ocena.getPrzedmiot()!= null) {
+		this.nazwaPrzedmiotu=ocena.getPrzedmiot().getNazwa();
+		}
+		}
 }
