@@ -1,5 +1,6 @@
 package com.example.dto;
 
+
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
@@ -7,10 +8,15 @@ import org.springframework.hateoas.RepresentationModel;
 
 import com.example.controllers.ProwadzacyController;
 import com.example.entities.Prowadzacy;
+
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter @Setter
 public class ProwadzacyDTO extends RepresentationModel<ProwadzacyDTO> {
 	
 		private Integer Id;
-		private Integer pesel;
+		private String pesel;
 		private String imie;
 		private String nazwisko;
 		private String email;
@@ -31,7 +37,7 @@ public class ProwadzacyDTO extends RepresentationModel<ProwadzacyDTO> {
 			this.tytulNaukowy = prowadzacy.getTytulNaukowy();
 			
 			
-			this.add(linkTo(methodOn(ProwadzacyController.class).getProwadzacy(prowadzacy.getId())).withRel("Prowadzacy"));
+			this.add(linkTo(methodOn(ProwadzacyController.class).getById(prowadzacy.getId())).withRel("Prowadzacy"));
 
 		}
 		

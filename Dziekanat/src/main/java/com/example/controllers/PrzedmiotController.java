@@ -6,7 +6,6 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,9 +23,11 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.example.dto.ProwadzacyDTO;
 import com.example.dto.PrzedmiotDTO;
+import com.example.dto.SredniaPrzedmiotuDTO;
 import com.example.entities.Ocena;
 import com.example.entities.Prowadzacy;
 import com.example.entities.Przedmiot;
+import com.example.error.ResourceNotFoundException;
 import com.example.repositories.OcenaRepository;
 import com.example.repositories.PrzedmiotRepository;
 
@@ -42,8 +43,14 @@ public @ResponseBody String addPrzedmiot(@RequestBody Przedmiot przedmiot) {
 	return "Dodano ocene o id" + przedmiot.getId();
 }
 @GetMapping("/{id}")
-public @ResponseBody Optional<Przedmiot> getPrzedmiot(@PathVariable Integer id){
-	return przedmiotRepo.findById(id);
+public @ResponseBody PrzedmiotDTO getById(@PathVariable Integer id){
+	Przedmiot przedmiot = przedmiotRepo.findById(id).orElse(null);
+	if(przedmiot ==null)
+	{
+		return null;
+	}
+	
+	return new PrzedmiotDTO(przedmiot);
 }
 @GetMapping
 public @ResponseBody Iterable<Przedmiot> getAll(){
@@ -68,14 +75,18 @@ private OcenaRepository ocenaRepo;
 @GetMapping("/{id}/prowadzacy")
 	public @ResponseBody CollectionModel<ProwadzacyDTO> getProwadzacyOfPrzedmiot(
 			@PathVariable Integer id){
-	Przedmiot przedmiot = przedmiotRepo.findById(id).orElse(null);
+	Przedmiot przedmiot = przedmiotRepo.findById(id)
+			.orElseThrow(() -> new ResourceNotFoundException("Nie znaleziono przedmiotu o ID: " + id ));
 	
 	if(przedmiot == null || przedmiot.getOcena() == null) return null;
 	
 	Set<Prowadzacy>  unikalniProwadzacy = new HashSet<>();
-	
+	if(przedmiot.getOcena()!=null) {
 	for(Ocena ocena : przedmiot.getOcena()) {
+		if(ocena != null && ocena.getProwadzacy() != null) {
 		unikalniProwadzacy.add(ocena.getProwadzacy());
+			}
+		}
 	}
 	List<ProwadzacyDTO> dtos = new ArrayList<>();
 	
@@ -119,4 +130,18 @@ public @ResponseBody CollectionModel<PrzedmiotDTO> getTopPrzedmiotByECTS(){
 			. getTopPrzedmiotByECTS()).withSelfRel());
 	return collectionModel;
 	}
+@GetMapping("/srednia")
+public @ResponseBody SredniaPrzedmiotuDTO getSredniaPrzedmiotu(@RequestParam Integer id) {
+	
+	Przedmiot przedmiot = przedmiotRepo.findById(id).orElse(null);
+	
+	Double srednia = ocenaRepo.getSredniaOcenPrzedmiotu(id);
+	
+	SredniaPrzedmiotuDTO dto = new SredniaPrzedmiotuDTO(id, przedmiot.getNazwa(), srednia);
+	dto.add(linkTo(PrzedmiotController.class)
+			.slash("srednia")
+			.withSelfRel());
+	return dto;
+}
+
 }

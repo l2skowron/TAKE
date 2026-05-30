@@ -23,9 +23,11 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import com.example.dto.LiczbaDTO;
 import com.example.dto.OcenaDTO;
 import com.example.dto.ProwadzacyDTO;
+import com.example.dto.StudentDTO;
 import com.example.entities.Ocena;
 import com.example.entities.Prowadzacy;
 import com.example.entities.Przedmiot;
+import com.example.entities.Student;
 import com.example.repositories.ProwadzacyRepository;
 import com.example.repositories.PrzedmiotRepository;
 
@@ -42,8 +44,14 @@ public class ProwadzacyController {
 		return "Added with id " + prowadzacy.getId();	
 	}
 @GetMapping("/{id}")
-public @ResponseBody Optional<Prowadzacy> getProwadzacy(@PathVariable Integer id){
-	return prowadzacyRepo.findById(id);
+public @ResponseBody ProwadzacyDTO getById(@PathVariable Integer id){
+	Prowadzacy prowadzacy = prowadzacyRepo.findById(id).orElse(null);
+	if(prowadzacy ==null)
+	{
+		return null;
+	}
+	
+	return new ProwadzacyDTO(prowadzacy);
 }
 @GetMapping
 public @ResponseBody Iterable<Prowadzacy> getAll(){

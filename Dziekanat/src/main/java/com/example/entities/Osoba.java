@@ -17,7 +17,7 @@ public abstract class Osoba {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Integer Id;
 	
-	private Integer pesel;
+	private String pesel;
 	private String imie;
 	private String nazwisko;
 	private String email;

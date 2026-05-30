@@ -16,7 +16,7 @@ import lombok.Setter;
 public class StudentDTO extends RepresentationModel<StudentDTO> {
 	
 	private Integer Id;
-	private Integer pesel;
+	private String pesel;
 	private String imie;
 	private String nazwisko;
 	private String email;

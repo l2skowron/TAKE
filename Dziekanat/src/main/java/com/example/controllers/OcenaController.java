@@ -6,7 +6,6 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
@@ -37,9 +36,15 @@ public class OcenaController {
 		return "Dodano ocene o id" + ocena.getId();
 	}
 @GetMapping("/{id}")
-	public @ResponseBody Optional<Ocena> getOcena(@PathVariable Integer id){
-		return ocenaRepo.findById(id);
+public @ResponseBody OcenaDTO getById(@PathVariable Integer id){
+	Ocena ocena = ocenaRepo.findById(id).orElse(null);
+	if(ocena ==null)
+	{
+		return null;
 	}
+	
+	return new OcenaDTO(ocena);
+}
 @GetMapping
 	public @ResponseBody Iterable<Ocena> getAll(){
 	return ocenaRepo.findAll();
@@ -86,5 +91,21 @@ public @ResponseBody OcenaDTO getOcenaById(@PathVariable Integer id) {
 	dto.add(linkTo(methodOn(OcenaController.class).getOcenaById(id)).withSelfRel());
 	
 	return dto;
+}
+@GetMapping("/{id}/prowadzacy")
+public @ResponseBody CollectionModel<OcenaDTO> getOcenaByProwadzacy(@PathVariable Integer id) {
+	
+	List<Ocena> ocenyProwadzacego = ocenaRepo.findByProwadzacyId(id);
+	
+	List<OcenaDTO> dtos = new ArrayList<>();
+	for(Ocena o : ocenyProwadzacego) {
+		if(o != null) {
+		dtos.add(new OcenaDTO(o));
+	}
+		}
+	CollectionModel<OcenaDTO> collectionModel = CollectionModel.of(dtos);
+	collectionModel.add(linkTo(methodOn(OcenaController.class)
+            .getOcenaByProwadzacy(id)).withSelfRel());
+	return collectionModel;
 }
 }
