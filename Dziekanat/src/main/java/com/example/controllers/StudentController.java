@@ -27,11 +27,13 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import com.example.dto.LiczbaDTO;
 import com.example.dto.OcenaDTO;
 import com.example.dto.PrzedmiotDTO;
+import com.example.dto.RankingDTO;
 import com.example.dto.SredniaDTO;
 import com.example.dto.StudentDTO;
 import com.example.entities.Ocena;
 import com.example.entities.Przedmiot;
 import com.example.entities.Student;
+import com.example.repositories.OcenaRepository;
 import com.example.repositories.StudentRepository;
 
 @Controller
@@ -265,6 +267,25 @@ public @ResponseBody LiczbaDTO countByKierunek(
 	return dto;
 }
 
+@Autowired
+OcenaRepository ocenaRepo;
+
+@GetMapping("/ranking")
+public @ResponseBody CollectionModel<RankingDTO> getTopStudenciBySrednia(@RequestParam Integer semestr){
+	List<Object[]> sredniaStudent = ocenaRepo.getStudentRankingBySemestr(semestr);
+	List<RankingDTO> dtos = new ArrayList<>();
+	
+	for( Object[] w : sredniaStudent) {
+		Student student = (Student) w[0];
+		Double srednia = (Double) w[1];
+		dtos.add(new RankingDTO(student.getId(), student.getImie(), student.getNazwisko(), srednia));
+	}
+	CollectionModel<RankingDTO> collectionModel = CollectionModel.of(dtos);
+	collectionModel.add(linkTo(methodOn(StudentController.class).getTopStudenciBySrednia(semestr)).withSelfRel());
+	
+	return collectionModel;
+	
+}
 }
 
 	
