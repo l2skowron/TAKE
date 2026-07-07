@@ -12,7 +12,13 @@ import com.example.entities.Student;
 public interface StudentRepository extends CrudRepository<Student, Integer> {
 		List<Student> findByNazwisko(String nazwisko);
 
+		List<Student> findByKierunekAndSemestrAndNazwisko(String kierunek, Integer semestr, String nazwisko);
+		
+		List<Student> findByKierunekAndNazwisko(String kierunek, String nazwisko);
+		
 		List<Student> findByKierunekAndSemestr(String kierunek, Integer semestr);
+		
+		List<Student> findBySemestrAndNazwisko(Integer semestr, String nazwisko);
 
 		List<Student> findByKierunek(String kierunek);
 

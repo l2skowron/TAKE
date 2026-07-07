@@ -22,6 +22,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.example.dto.OcenaDTO;
 import com.example.entities.Ocena;
+import com.example.error.InvalidRequestException;
+import com.example.error.ResourceNotFoundException;
 import com.example.repositories.OcenaRepository;
 
 
@@ -40,7 +42,7 @@ public @ResponseBody OcenaDTO getById(@PathVariable Integer id){
 	Ocena ocena = ocenaRepo.findById(id).orElse(null);
 	if(ocena ==null)
 	{
-		return null;
+		throw new ResourceNotFoundException("Ocena o id: "+ id+ " nie istnieje. ");
 	}
 	
 	return new OcenaDTO(ocena);
@@ -52,13 +54,19 @@ public @ResponseBody OcenaDTO getById(@PathVariable Integer id){
 @PutMapping
 public @ResponseBody String updateOcena(@RequestBody Ocena ocena) {
 	if(ocena.getId()==null) {
-		return "Podaj id aby edytowac. ";
+		throw new InvalidRequestException("Podaj id aby edytowac. ");
+	}
+	if(!ocenaRepo.existsById(ocena.getId())) {
+		throw new ResourceNotFoundException("Ocena o id: "+ ocena.getId()+ " nie istnieje. ");
 	}
 	ocenaRepo.save(ocena);
 	return "Edytowano ocene o id= " + ocena.getId();
 }
-@DeleteMapping
+@DeleteMapping("/{id}")
 public @ResponseBody String delete(@PathVariable Integer id) {
+	if(!ocenaRepo.existsById(id)) {
+		throw new ResourceNotFoundException("Ocena o id: "+ id+ " nie istnieje. ");
+	}
 	ocenaRepo.deleteById(id);
 	return "Usunieto ocene o id= "+ id;
 }
@@ -66,6 +74,9 @@ public @ResponseBody String delete(@PathVariable Integer id) {
 public @ResponseBody CollectionModel<OcenaDTO> findByDataWystawieniaBetween(
 		@RequestParam LocalDate dataPoczatkowa, @RequestParam LocalDate dataKoncowa){
 	List<Ocena> ocenyWPrzedziale  = ocenaRepo.findByDataBetween(dataPoczatkowa,dataKoncowa);
+	if(ocenyWPrzedziale.isEmpty()) {
+		throw new ResourceNotFoundException("Nie znaleziono ocen dla podanego przedziału");
+	}
 
 	List<OcenaDTO> dtos = new ArrayList<>();
 
@@ -83,12 +94,16 @@ public @ResponseBody CollectionModel<OcenaDTO> findByDataWystawieniaBetween(
 public @ResponseBody OcenaDTO getOcenaById(@PathVariable Integer id) {
 	
 	Ocena ocena = ocenaRepo.findById(id).orElse(null);
-	if (ocena == null) return null;
+	if (ocena == null) 
+		throw new ResourceNotFoundException("Ocena o id: "+ id+ " nie istnieje. ");
 	
 	OcenaDTO dto = new OcenaDTO(ocena);
 	
 	
 	dto.add(linkTo(methodOn(OcenaController.class).getOcenaById(id)).withSelfRel());
+	dto.add(linkTo(methodOn(StudentController.class).getById(ocena.getStudent().getId())).withRel("student"));
+	dto.add(linkTo(methodOn(ProwadzacyController.class).getById(ocena.getProwadzacy().getId())).withRel("prowadzacy"));
+	dto.add(linkTo(methodOn(PrzedmiotController.class).getById(ocena.getPrzedmiot().getId())).withRel("przedmiot"));
 	
 	return dto;
 }
@@ -96,6 +111,9 @@ public @ResponseBody OcenaDTO getOcenaById(@PathVariable Integer id) {
 public @ResponseBody CollectionModel<OcenaDTO> getOcenaByProwadzacy(@PathVariable Integer id) {
 	
 	List<Ocena> ocenyProwadzacego = ocenaRepo.findByProwadzacyId(id);
+	if(ocenyProwadzacego.isEmpty()) {
+		throw new ResourceNotFoundException("Nie znaleziono ocen dla prowadzącego o id: " + id);
+	}
 	
 	List<OcenaDTO> dtos = new ArrayList<>();
 	for(Ocena o : ocenyProwadzacego) {

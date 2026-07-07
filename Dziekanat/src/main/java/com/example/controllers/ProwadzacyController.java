@@ -5,7 +5,6 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.CollectionModel;
@@ -23,11 +22,11 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import com.example.dto.LiczbaDTO;
 import com.example.dto.OcenaDTO;
 import com.example.dto.ProwadzacyDTO;
-import com.example.dto.StudentDTO;
 import com.example.entities.Ocena;
 import com.example.entities.Prowadzacy;
 import com.example.entities.Przedmiot;
-import com.example.entities.Student;
+import com.example.error.InvalidRequestException;
+import com.example.error.ResourceNotFoundException;
 import com.example.repositories.ProwadzacyRepository;
 import com.example.repositories.PrzedmiotRepository;
 
@@ -48,7 +47,7 @@ public @ResponseBody ProwadzacyDTO getById(@PathVariable Integer id){
 	Prowadzacy prowadzacy = prowadzacyRepo.findById(id).orElse(null);
 	if(prowadzacy ==null)
 	{
-		return null;
+		throw new ResourceNotFoundException("Nie istnieje prowadzący o id:" + id);
 	}
 	
 	return new ProwadzacyDTO(prowadzacy);
@@ -60,7 +59,10 @@ public @ResponseBody Iterable<Prowadzacy> getAll(){
 @PutMapping
 public @ResponseBody String updateProwadzacy(@RequestBody Prowadzacy prowadzacy) {
 	if(prowadzacy.getId()==null) {
-		return "Podaj id. ";
+		throw new InvalidRequestException("Prowadzący o id: "+prowadzacy.getId()+" nie istnieje.");
+	}
+	if(!prowadzacyRepo.existsById(prowadzacy.getId())) {
+		throw new ResourceNotFoundException("Nie ma prowadzącego o id: "+ prowadzacy.getId());
 	}
 	prowadzacyRepo.save(prowadzacy);
 	return "Zaktualizowano prowadzacego o id= " + prowadzacy.getId();
@@ -68,6 +70,9 @@ public @ResponseBody String updateProwadzacy(@RequestBody Prowadzacy prowadzacy)
 
 @DeleteMapping("/{id}")
 public @ResponseBody String delete(@PathVariable Integer id) {
+	if(!prowadzacyRepo.existsById(id)) {
+		throw new ResourceNotFoundException("Prowadzący o id: "+ id+ " nie istnieje. ");
+	}
 	 prowadzacyRepo.deleteById(id);
 	return "Usunieto prowadzącego o id " + id;
 }
@@ -77,7 +82,8 @@ private PrzedmiotRepository przedmiotRepo;
 @GetMapping("/{id}/oceny")
 public @ResponseBody CollectionModel<OcenaDTO> getOcenyForProwadzacy(@PathVariable Integer id){
 	Prowadzacy prowadzacy = prowadzacyRepo.findById(id).orElse(null);
-	if(prowadzacy == null) return null;
+	if(prowadzacy == null) 
+		throw new ResourceNotFoundException("Prowadzący o id: "+ id+ " nie istnieje.");
 	
 	List<OcenaDTO> ocenyDTO =new ArrayList<>();
 	

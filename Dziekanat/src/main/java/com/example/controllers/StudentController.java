@@ -33,7 +33,10 @@ import com.example.dto.StudentDTO;
 import com.example.entities.Ocena;
 import com.example.entities.Przedmiot;
 import com.example.entities.Student;
+import com.example.error.InvalidRequestException;
+import com.example.error.ResourceNotFoundException;
 import com.example.repositories.OcenaRepository;
+import com.example.repositories.PrzedmiotRepository;
 import com.example.repositories.StudentRepository;
 
 @Controller
@@ -53,10 +56,12 @@ public class StudentController {
 	
 	@Autowired
 	StudentRepository studentRepo;
+	@Autowired
+	PrzedmiotRepository przedmiotRepo;
 	@PostMapping
 	public @ResponseBody String addStudent(@RequestBody Student student) {
 		student= studentRepo.save(student);
-		return "Added with id=" + student.getId();
+		return "Dodano studenta o id: " + student.getId();
 	}
 		
 	@GetMapping("/{id}")
@@ -64,7 +69,7 @@ public class StudentController {
 		Student student = studentRepo.findById(id).orElse(null);
 		if(student ==null)
 		{
-			return null;
+			throw new ResourceNotFoundException("Nie istnieje student o id: " + id);
 		}
 		
 		return new StudentDTO(student);
@@ -76,14 +81,20 @@ public class StudentController {
 	@PutMapping
 	public @ResponseBody String editStudent(@RequestBody Student student) {
 		if(student.getId()==null) {
-			return "Podaj id aby edytowac. ";
+			throw new InvalidRequestException("Podaj id aby edytować. ");
 		}
+		if(!studentRepo.existsById(student.getId())) {
+			throw new ResourceNotFoundException("Student o id: "+ student.getId()+ " nie istnieje.");
+		}	
 		studentRepo.save(student);
 		return "Zaktualizowano dane studenta o id= " + student.getId();
 		}
 	
 	@DeleteMapping("/{id}")
 	public @ResponseBody String delete(@PathVariable Integer id) {
+		if(!studentRepo.existsById(id)) {
+			throw new ResourceNotFoundException("Student o id: "+ id+ " nie istnieje.");
+		}
 		studentRepo.deleteById(id);
 		return "Usunięto studenta o id=" +id;	
 	}
@@ -95,13 +106,21 @@ public class StudentController {
 	        @RequestParam(required = false) String nazwisko) {
 		
 		List<Student> repoStudent;
-		
-		if(kierunek != null && semestr != null) {
+		if(kierunek != null && semestr != null && nazwisko != null) {
+			repoStudent = studentRepo.findByKierunekAndSemestrAndNazwisko(kierunek,semestr,nazwisko);
+		}
+		else if(kierunek != null && semestr != null) {
 			repoStudent = studentRepo.findByKierunekAndSemestr(kierunek,semestr);
+		}else if(kierunek != null && nazwisko != null) {
+			repoStudent = studentRepo.findByKierunekAndNazwisko(kierunek, nazwisko);
+		}else if(semestr != null && nazwisko != null) {
+			repoStudent = studentRepo.findBySemestrAndNazwisko(semestr, nazwisko);
 		}else if(kierunek != null) {
 			repoStudent = studentRepo.findByKierunek(kierunek);
 		}else if(semestr != null) {
 			repoStudent = studentRepo.findBySemestr(semestr);
+		}else if(nazwisko != null) {
+			repoStudent = studentRepo.findByNazwisko(nazwisko);
 		}else {
 			repoStudent=(List<Student>) studentRepo.findAll();
 		}
@@ -122,7 +141,7 @@ public class StudentController {
 	@GetMapping("/{id}/oceny")
 	public @ResponseBody CollectionModel<OcenaDTO> getOcenyForStudent(@PathVariable Integer id){
 		Student student = studentRepo.findById(id).orElse(null);
-		if(student == null) return null;
+		if(student == null) throw new ResourceNotFoundException("Student o id:" + id + " nie istnieje.");
 		
 		List<OcenaDTO> ocenyDTO =new ArrayList<>();
 		for(Ocena ocena : student.getOceny()) {
@@ -138,7 +157,11 @@ public class StudentController {
 	@GetMapping("/{id}/srednia/przedmiot/{przedmiotId}")
 	public @ResponseBody SredniaDTO getSredniaForPrzedmiot(@PathVariable Integer id,
 			@PathVariable Integer przedmiotId){
-		Student student = studentRepo.findById(id).orElse(null);
+		Student student = studentRepo.findById(id).orElseThrow(()-> new ResourceNotFoundException("Student o id: "+ id + " nie istnieje." ));
+		if(!przedmiotRepo.existsById(przedmiotId)) {
+			throw new ResourceNotFoundException("Przedmiot o id: "+ przedmiotId +" nie istnieje.");
+		}
+		
 		if(student == null || student.getOceny() == null || student.getOceny().isEmpty()) {
 			return new SredniaDTO(id,0.0);
 		}
@@ -167,10 +190,13 @@ public class StudentController {
 	@GetMapping("/{id}/srednia-ogolna")
 	public @ResponseBody SredniaDTO getSredniaOgolnaECTS(@PathVariable Integer id,
 			@RequestParam(required = false) Integer semestr) {
-	Student student = studentRepo.findById(id).orElse(null);
+	Student student = studentRepo.findById(id).orElseThrow(() -> new ResourceNotFoundException("Student o id: "+ id + " nie istnieje."));
 	if(student == null || student.getOceny() == null || student.getOceny().isEmpty()) {
 		return new SredniaDTO(id,0.0);
 	}
+	if (semestr != null && (semestr < 1 || semestr > 10)) { 
+        throw new InvalidRequestException( "Podano nieprawidłowy numer semestru");
+    }
 	Map<Przedmiot,List<Ocena>> ocenyDlaPrzedmiotu = new HashMap<>();
 	for(Ocena ocena : student.getOceny()) {
 		Przedmiot p = ocena.getPrzedmiot();
@@ -221,7 +247,10 @@ public class StudentController {
 @GetMapping("/{id}/przedmioty-studenta")
 public @ResponseBody CollectionModel<PrzedmiotDTO> getPrzedmiotStudent(@PathVariable Integer id) {
 	Student student = studentRepo.findById(id).orElse(null);
-	if(student == null || student.getOceny() == null) return null;
+	if(student == null || student.getOceny() == null) 
+		{
+		throw new ResourceNotFoundException("Student o id: "+ id+ " nie istnieje.");
+		};
 	
 	Set<Przedmiot> przedmioty =new HashSet<>();
 	for(Ocena ocena : student.getOceny()) {
@@ -262,7 +291,7 @@ public @ResponseBody LiczbaDTO countByKierunek(
 	
 	long liczbaStudentow = studentRepo.countByKierunek(kierunek);
 	
-	LiczbaDTO dto = new LiczbaDTO(liczbaStudentow,"Liczba studentow na kierunku");
+	LiczbaDTO dto = new LiczbaDTO(liczbaStudentow,"Liczba studentow na kierunku: " + kierunek);
 	dto.add(linkTo(methodOn(StudentController.class).countByKierunek(kierunek)).withSelfRel());
 	return dto;
 }
@@ -274,6 +303,9 @@ OcenaRepository ocenaRepo;
 public @ResponseBody CollectionModel<RankingDTO> getTopStudenciBySrednia(@RequestParam Integer semestr){
 	List<Object[]> sredniaStudent = ocenaRepo.getStudentRankingBySemestr(semestr);
 	List<RankingDTO> dtos = new ArrayList<>();
+	if (semestr != null && (semestr < 1 || semestr > 10)) { 
+        throw new InvalidRequestException( "Podano nieprawidłowy numer semestru");
+    }
 	
 	for( Object[] w : sredniaStudent) {
 		Student student = (Student) w[0];

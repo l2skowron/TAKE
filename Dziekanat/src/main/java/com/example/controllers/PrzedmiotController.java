@@ -21,12 +21,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import com.example.dto.OcenaDTO;
 import com.example.dto.ProwadzacyDTO;
 import com.example.dto.PrzedmiotDTO;
 import com.example.dto.SredniaPrzedmiotuDTO;
 import com.example.entities.Ocena;
 import com.example.entities.Prowadzacy;
 import com.example.entities.Przedmiot;
+import com.example.error.InvalidRequestException;
 import com.example.error.ResourceNotFoundException;
 import com.example.repositories.OcenaRepository;
 import com.example.repositories.PrzedmiotRepository;
@@ -40,14 +42,14 @@ PrzedmiotRepository przedmiotRepo;
 @PostMapping
 public @ResponseBody String addPrzedmiot(@RequestBody Przedmiot przedmiot) {
 	przedmiot = przedmiotRepo.save(przedmiot);
-	return "Dodano ocene o id" + przedmiot.getId();
+	return "Dodano przedmiot o id" + przedmiot.getId();
 }
 @GetMapping("/{id}")
 public @ResponseBody PrzedmiotDTO getById(@PathVariable Integer id){
 	Przedmiot przedmiot = przedmiotRepo.findById(id).orElse(null);
 	if(przedmiot ==null)
 	{
-		return null;
+		throw new ResourceNotFoundException("Przedmiot o id: " + id + " nie istnieje.");
 	}
 	
 	return new PrzedmiotDTO(przedmiot);
@@ -59,13 +61,19 @@ return przedmiotRepo.findAll();
 @PutMapping
 public @ResponseBody String updatePrzedmiot(@RequestBody Przedmiot przedmiot) {
 if(przedmiot.getId()==null) {
-	return "Podaj id aby edytowac. ";
+	throw new InvalidRequestException("Podaj id aby edytować");
+}
+if(!przedmiotRepo.existsById(przedmiot.getId())) {
+	throw new ResourceNotFoundException("Przedmiot o id: "+ przedmiot.getId() + " nie istnieje.");
 }
 przedmiotRepo.save(przedmiot);
 return "Edytowano ocene o id= " + przedmiot.getId();
 }
-@DeleteMapping
+@DeleteMapping("/{id}")
 public @ResponseBody String delete(@PathVariable Integer id) {
+	if(!przedmiotRepo.existsById(id)) {
+		throw new ResourceNotFoundException("Przedmiot o id: "+ id + " nie istnieje.");
+	}
 przedmiotRepo.deleteById(id);
 return "Usunieto ocene o id= "+ id;
 }
@@ -104,6 +112,9 @@ private OcenaRepository ocenaRepo;
 @GetMapping("/ects")
 public @ResponseBody CollectionModel<PrzedmiotDTO> getPrzedmiotByECTS(
 		@RequestParam Integer ECTS){
+	if(ECTS>10|| ECTS<0) {
+		throw new InvalidRequestException("Podano błędną wartość ECTS.");
+	}
 	List <Przedmiot> przedmioty = przedmiotRepo.findPrzedmiotByECTS(ECTS);
 	
 	List<PrzedmiotDTO> dtos = new ArrayList<>();
@@ -133,7 +144,8 @@ public @ResponseBody CollectionModel<PrzedmiotDTO> getTopPrzedmiotByECTS(){
 @GetMapping("/srednia")
 public @ResponseBody SredniaPrzedmiotuDTO getSredniaPrzedmiotu(@RequestParam Integer id) {
 	
-	Przedmiot przedmiot = przedmiotRepo.findById(id).orElse(null);
+	Przedmiot przedmiot = przedmiotRepo.findById(id)
+			.orElseThrow(() -> new ResourceNotFoundException("Nie znaleziono przedmiotu o ID: " + id ));
 	
 	Double srednia = ocenaRepo.getSredniaOcenPrzedmiotu(id);
 	
@@ -143,5 +155,22 @@ public @ResponseBody SredniaPrzedmiotuDTO getSredniaPrzedmiotu(@RequestParam Int
 			.withSelfRel());
 	return dto;
 }
+@GetMapping("/oceny")
+public @ResponseBody CollectionModel<OcenaDTO> getOcenyForPrzedmiot(@RequestParam Integer id) {
+	Przedmiot przedmiot = przedmiotRepo.findById(id)
+			.orElseThrow(() -> new ResourceNotFoundException("Nie znaleziono przedmiotu o ID: " + id ));
+	
+	List<OcenaDTO> ocenyDTO =new ArrayList<>();
+	for(Ocena ocena : przedmiot.getOcena()) {
+		ocenyDTO.add(new OcenaDTO(ocena));
+	}
+	CollectionModel<OcenaDTO> collectionModel = CollectionModel.of(ocenyDTO);
+	
+	collectionModel.add(linkTo(methodOn(PrzedmiotController.class).getOcenyForPrzedmiot(id)).withSelfRel());
+	
+	return collectionModel;
+}
 
 }
+
+
